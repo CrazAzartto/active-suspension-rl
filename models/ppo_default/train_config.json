@@ -1,0 +1,98 @@
+{
+  "train_config": {
+    "_comment": "Training-only settings. Physical/reward parameters stay at Stage 1 defaults unless listed in env_overrides.",
+    "run_name": "ppo_default",
+    "seed": 0,
+    "total_timesteps": 300000,
+    "n_envs": 4,
+    "env_overrides": {},
+    "train_road": "train",
+    "normalize_reward": true,
+    "ppo": {
+      "learning_rate": 0.0003,
+      "n_steps": 1000,
+      "batch_size": 500,
+      "n_epochs": 10,
+      "gamma": 0.99,
+      "gae_lambda": 0.95,
+      "clip_range": 0.2,
+      "ent_coef": 0.0,
+      "vf_coef": 0.5,
+      "max_grad_norm": 0.5,
+      "net_arch": [
+        64,
+        64
+      ],
+      "activation": "tanh",
+      "log_std_init": -0.5,
+      "device": "cpu"
+    },
+    "validation": {
+      "eval_freq": 25000,
+      "seeds": [
+        90000,
+        90001,
+        90002,
+        90003,
+        90004,
+        90005
+      ],
+      "road": "train"
+    },
+    "checkpoint_freq": 50000
+  },
+  "env_config_resolved": {
+    "vehicle": {
+      "ms": 290.0,
+      "mu": 59.0,
+      "ks": 16000.0,
+      "cs": 1000.0,
+      "kt": 190000.0,
+      "ct": 0.0
+    },
+    "actuator": {
+      "u_max": 1500.0
+    },
+    "timing": {
+      "dt_sim": 0.001,
+      "dt_ctrl": 0.01,
+      "episode_duration": 10.0
+    },
+    "reward": {
+      "a_ref": 1.0,
+      "d_ref": 0.015,
+      "f_ref_frac": 0.25,
+      "w_acc": 1.0,
+      "w_defl": 0.3,
+      "w_tyre": 0.3,
+      "w_effort": 0.05,
+      "w_rate": 0.05,
+      "termination_cost_per_step": 10.0
+    },
+    "safety": {
+      "hard_suspension_limit": 0.3,
+      "hard_tyre_limit": 0.15,
+      "travel_limit": 0.1,
+      "travel_limit_terminates": false,
+      "contact_loss_terminates": false
+    },
+    "obs_scales": {
+      "acc": 2.0,
+      "defl": 0.05,
+      "defl_rate": 0.5,
+      "tyre_defl": 0.01,
+      "unsprung_vel": 0.5
+    },
+    "road": "train",
+    "speed": 15.0,
+    "initial_state_noise": 0.0
+  },
+  "versions": {
+    "python": "3.12.3",
+    "torch": "2.14.1+cu130",
+    "sb3": "2.9.0",
+    "numpy": "2.4.4",
+    "git_commit": "unknown"
+  },
+  "command": "python train.py --config configs/ppo_default.json --seed 0 --run-name ppo_default --total-timesteps 300000 --n-envs 4"
+}
