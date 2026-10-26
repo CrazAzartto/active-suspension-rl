@@ -1,0 +1,32 @@
+{
+  "_comment": "Training-only settings. Physical/reward parameters stay at Stage 1 defaults unless listed in env_overrides.",
+  "run_name": "ppo_default",
+  "seed": 0,
+  "total_timesteps": 300000,
+  "n_envs": 4,
+  "env_overrides": {},
+  "train_road": "train",
+  "normalize_reward": true,
+  "ppo": {
+    "learning_rate": 0.0003,
+    "n_steps": 1000,
+    "batch_size": 500,
+    "n_epochs": 10,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "clip_range": 0.2,
+    "ent_coef": 0.0,
+    "vf_coef": 0.5,
+    "max_grad_norm": 0.5,
+    "net_arch": [64, 64],
+    "activation": "tanh",
+    "log_std_init": -0.5,
+    "device": "cpu"
+  },
+  "validation": {
+    "eval_freq": 25000,
+    "seeds": [90000, 90001, 90002, 90003, 90004, 90005],
+    "road": "train"
+  },
+  "checkpoint_freq": 50000
+}

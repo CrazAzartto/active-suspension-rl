@@ -1,0 +1,2 @@
+# Kept for compatibility with the Stage 2 handoff; identical to requirements.txt.
+-r requirements.txt

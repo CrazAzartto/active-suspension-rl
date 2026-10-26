@@ -1,0 +1,22 @@
+{
+  "_comment": "Evaluation scenarios. Passive and PPO are run with the SAME env config, road, speed, seed, options and initial state. Seeds >= 100000 are never used in training or model selection. 'deterministic' scenarios have no random element, so 1 seed suffices.",
+  "seed_start": 100000,
+  "scenarios": [
+    {"name": "smooth_A_15",        "group": "unseen-road-class", "road": "rough_A", "speed": 15.0, "n_seeds": 20,
+     "note": "ISO class A (very smooth) at 15 m/s; class A is NOT in the training mixture"},
+    {"name": "flat_perturbed",     "group": "unseen-initial-state", "road": "flat", "speed": 15.0, "n_seeds": 1,
+     "options": {"initial_state": [0.02, 0.0, 0.0, 0.0]}, "deterministic": true,
+     "note": "flat road, body displaced +20 mm at t=0 (free-decay test); identical for both controllers"},
+    {"name": "bump_10",            "group": "train-distribution", "road": "bump", "speed": 10.0, "n_seeds": 1, "deterministic": true,
+     "note": "Stage 1 'bump' preset: raised cosine h=0.04 m, L=2.5 m, start 10 m, 10 m/s"},
+    {"name": "rough_B_15",         "group": "train-distribution", "road": "rough_B", "speed": 15.0, "n_seeds": 20},
+    {"name": "rough_C_15",         "group": "train-distribution", "road": "rough_C", "speed": 15.0, "n_seeds": 20},
+    {"name": "heldout_bump_tall",  "group": "held-out", "road": {"kind": "bump", "height": 0.055, "length": 3.5, "start": 10.0, "speed": 16.0},
+     "speed": 16.0, "n_seeds": 1, "deterministic": true,
+     "note": "taller/longer/faster than any training bump (train: h<=0.04, L<=3, v<=14)"},
+    {"name": "heldout_rough_D_10", "group": "held-out", "road": "rough_D", "speed": 10.0, "n_seeds": 20,
+     "note": "ISO class D (not in training) at 10 m/s"},
+    {"name": "heldout_test_mixture", "group": "held-out", "road": "test", "speed": 15.0, "n_seeds": 30,
+     "note": "Stage 1 'test' mixture: tall bump / ISO A at 22-28 m/s / ISO D at 8-12 m/s (speed arg ignored by the mixture)"}
+  ]
+}
