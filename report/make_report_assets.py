@@ -57,17 +57,31 @@ M = {
  "AllPaired": "all" if all(frac(s) == 1.0 for s in rand) else "not all",
  "NEpisodes": f"{len(ep[ep.controller=='ppo'])}",
 }
+# ------------------------------------------------------------------ multi-seed robustness (optional extra runs)
+seed_runs = [r for r in ("ppo_seed1", "ppo_seed2") if (ROOT / "logs" / r / "validation_log.csv").exists()]
+vals = {a.run: val, **{r: pd.read_csv(ROOT / "logs" / r / "validation_log.csv") for r in seed_runs}}
+M["NSeeds"] = f"{len(vals)}"
+M["ValBestAll"] = ", ".join(f"{v.val_return_mean.max():.0f}" for v in vals.values())
+M["ValDipAll"] = f"{min(v.val_return_mean.min() for v in vals.values()):.0f}"
+ss_path = ROOT / "results" / "seed_summary.csv"
+if ss_path.exists():
+    ss = pd.read_csv(ss_path)
+    def ssv(m, col, scen): return ss[(ss.metric == m) & ss.scenario.isin(scen)][col]
+    M["SeedAccRandLo"] = f"{ssv('rms_acc', 'min', rand).min():.0f}"; M["SeedAccRandHi"] = f"{ssv('rms_acc', 'max', rand).max():.0f}"
+    M["SeedDtlRandLo"] = f"{-ssv('rms_dtl', 'max', rand).max():.0f}"; M["SeedDtlRandHi"] = f"{-ssv('rms_dtl', 'min', rand).min():.0f}"
 (R / "numbers.tex").write_text("".join(f"\\newcommand{{\\N{k}}}{{{v}}}\n" for k, v in M.items()))
 
 # ------------------------------------------------------------------ figures
 plt.rcParams.update({"font.size": 6.5, "axes.grid": True, "grid.alpha": .3, "axes.spines.top": False, "axes.spines.right": False,
                      "font.family": "serif", "lines.linewidth": .9})
 fig, ax = plt.subplots(figsize=(3.35, 1.45))
-ax.plot(val.timesteps / 1e3, val.val_return_mean, "o-", ms=2.5, color="#d62728", label="PPO (deterministic)")
-ax.fill_between(val.timesteps / 1e3, val.val_return_mean - val.val_return_std, val.val_return_mean + val.val_return_std, color="#d62728", alpha=.15)
-ax.axhline(val.passive_return_mean.iloc[0], color="k", ls="--", label="passive (same seeds)")
-ax.set_xlabel("environment steps [$10^3$]"); ax.set_ylabel("validation return"); ax.set_ylim(max(-3800, val.val_return_mean.min() - 200), 0 if val.val_return_mean.max() > -100 else -200)
-ax.legend(fontsize=6, loc="lower right"); fig.tight_layout(pad=.3); fig.savefig(R / "fig_curve.pdf"); plt.close(fig)
+for (run, v), col in zip(vals.items(), ("#d62728", "#1f77b4", "#2ca02c")):
+    sd = json.load(open(ROOT / "models" / run / "train_config.json"))["train_config"]["seed"]
+    ax.plot(v.timesteps / 1e3, v.val_return_mean, "o-", ms=2, color=col, label=f"PPO seed {sd}")
+ax.axhline(val.passive_return_mean.iloc[0], color="k", ls="--", label="passive")
+lo = min(v.val_return_mean.min() for v in vals.values())
+ax.set_xlabel("environment steps [$10^3$]"); ax.set_ylabel("validation return"); ax.set_ylim(lo - 300, 0)
+ax.legend(fontsize=5.5, loc="lower right", ncol=2); fig.tight_layout(pad=.3); fig.savefig(R / "fig_curve.pdf"); plt.close(fig)
 
 d = ts[ts.scenario == a.ts_scenario]; seed = d.seed.min()
 panels = [("sprung_acceleration", "sprung acc. [m/s$^2$]", 1), ("suspension_deflection", "deflection $z_s-z_u$ [mm]", 1e3),

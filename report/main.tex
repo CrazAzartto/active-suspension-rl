@@ -23,7 +23,7 @@
 \usepackage{enumitem}\setlist{nosep,leftmargin=1.2em}
 \usepackage[hidelinks]{hyperref}
 \input{numbers.tex}
-\newcommand{\repourl}{https://github.com/TODO-replace-with-team-repo}% <-- REPLACE with the real GitHub URL
+\newcommand{\repourl}{https://github.com/CrazAzartto/active-suspension-rl}
 \setlength{\parindent}{1em}\setlength{\parskip}{0pt}
 \setlength{\textfloatsep}{5pt plus 2pt minus 2pt}\setlength{\floatsep}{4pt plus 2pt minus 2pt}\setlength{\intextsep}{4pt plus 2pt minus 2pt}
 \setlength{\abovedisplayskip}{2pt}\setlength{\belowdisplayskip}{2pt}
@@ -56,7 +56,7 @@ With $z$ up and displacements from static equilibrium (gravity cancels), body $z
 m_s\ddot z_s &= -k_s(z_s-z_u)-c_s(\dot z_s-\dot z_u)+u,\\
 m_u\ddot z_u &= k_s(z_s-z_u)+c_s(\dot z_s-\dot z_u)-k_t(z_u-z_r)-u.
 \end{align}
-Parameters (plausible round values, \emph{not} identified from a real car): $m_s{=}290$ kg, $m_u{=}59$ kg, $k_s{=}16$ kN/m, $c_s{=}1$ kN\,s/m, $k_t{=}190$ kN/m (body mode 1.18 Hz, wheel hop 9.40 Hz, $\zeta{\approx}0.23$). Integration: fixed-step RK4, 1 ms, force held constant over each 10 ms control step; episode 10 s (1000 steps). Roads are $C^1$ profiles at constant speed, $z_r(t){=}z(vt)$: flat, raised-cosine bump, and ISO~8608-style random roads~\cite{iso8608} (classes A--E, $G_d(n){=}G_d(n_0)(n/n_0)^{-2}$, 100 random-phase cosines). Assumptions: linear spring/damper/tyre, no bump stops, no tyre lift-off (tyre-load ratio $1{+}F_t/((m_s{+}m_u)g)\le0$ is only \emph{flagged}), ideal actuator without lag.
+Parameters (plausible round values, \emph{not} identified from a real car): $m_s{=}290$ kg, $m_u{=}59$ kg, $k_s{=}16$ kN/m, $c_s{=}1$ kN\,s/m, $k_t{=}190$ kN/m (coupled modes 1.14 Hz and 9.34 Hz, damping ratios 0.21 and 0.15). Integration: fixed-step RK4, 1 ms, force held constant over each 10 ms control step; episode 10 s (1000 steps). Roads are $C^1$ profiles at constant speed, $z_r(t){=}z(vt)$: flat, raised-cosine bump, and ISO~8608-style random roads~\cite{iso8608} (classes A--E, $G_d(n){=}G_d(n_0)(n/n_0)^{-2}$, 100 random-phase cosines). Assumptions: linear spring/damper/tyre, no bump stops, no tyre lift-off (tyre-load ratio $1{+}F_t/((m_s{+}m_u)g)\le0$ is only \emph{flagged}), ideal actuator without lag.
 
 \section{RL Formulation}
 \subsection{State (observation) space $\mathcal S$}
@@ -75,11 +75,11 @@ r_k=-\Big[w_a\tfrac{\overline{\ddot z_s^{2}}}{a_{\rm ref}^2}+w_d\tfrac{\overline
 $(w_a,w_d,w_t,w_u,w_\Delta){=}(1,0.3,0.3,0.05,0.05)$, $a_{\rm ref}{=}1$ m/s$^2$, $d_{\rm ref}{=}0.015$ m, $F_{\rm ref}{=}0.25(m_s{+}m_u)g{=}856$ N. The scales are the rounded RMS response of the passive car on ISO~C at 15 m/s, so each term is $O(1)$ and the weights express priority (comfort first). Safety-guard termination ($|d|{>}0.30$ m, $|z_u{-}z_r|{>}0.15$ m, non-finite state) costs 10 per remaining step; it never occurred (\NEarlyTerm\ of \NNEpisodes\ PPO evaluation episodes). Weights are a first choice, \emph{not} tuned.
 
 \section{Environment and PPO Training}
-The Gymnasium environment resamples road, speed and seed at each reset. \textbf{Training mixture:} flat (10--20 m/s); bump ($h{\in}[0.02,0.04]$ m, $L{\in}[1.5,3]$ m, 8--14 m/s); ISO B and C (10--20 m/s). PPO suits the bounded continuous force, the cheap simulator and needs stable updates (clipped objective). Stable-Baselines3 setup: MLP actor/critic $64{\times}64$ tanh; 4 envs $\times$ 1000-step rollouts; batch 500; 10 epochs; learning rate $3{\times}10^{-4}$; $\gamma{=}0.99$; GAE $\lambda{=}0.95$; clip 0.2; entropy coef.\ 0; seed 0; \NTrainSteps\ steps (\NWallTime~s, one CPU core). Only the reward is normalised (running statistics). Every 25k steps the policy is validated on six fixed seeds (90000--90005) of the training mixture; the best checkpoint (\NBestStep k steps) is kept. Evaluation seeds ($\ge$100000) are never used for training or selection.
+The Gymnasium environment resamples road, speed and seed at each reset. \textbf{Training mixture:} flat (10--20 m/s); bump ($h{\in}[0.02,0.04]$ m, $L{\in}[1.5,3]$ m, 8--14 m/s); ISO B and C (10--20 m/s). PPO suits the bounded continuous force, the cheap simulator and needs stable updates (clipped objective). Stable-Baselines3 setup: MLP actor/critic $64{\times}64$ tanh; 4 envs $\times$ 1000-step rollouts; batch 500; 10 epochs; learning rate $3{\times}10^{-4}$; $\gamma{=}0.99$; GAE $\lambda{=}0.95$; clip 0.2; entropy coef.\ 0; seeds 0, 1, 2 (seed 0 in Table~\ref{tab:res}); \NTrainSteps\ steps per seed (\NWallTime~s, one CPU core). Only the reward is normalised (running statistics). Every 25k steps the policy is validated on six fixed seeds (90000--90005) of the training mixture; the best checkpoint (\NBestStep k steps) is kept. Evaluation seeds ($\ge$100000) are never used for training or selection.
 
 \begin{figure}[t]\centering
 \includegraphics[width=\columnwidth]{fig_curve.pdf}
-\caption{Validation return of PPO (mean$\pm$std, 6 seeds) vs passive on the same seeds (higher is better). Best checkpoint: \NValBest; passive: \NValPassive.}\label{fig:curve}
+\caption{Validation return (mean over 6 validation roads) for three PPO training seeds vs passive on the same roads (higher is better). Best: \NValBestAll; passive: \NValPassive.}\label{fig:curve}
 \end{figure}
 
 \section{Baseline and Evaluation Protocol}
@@ -102,7 +102,16 @@ Scenario (set) & $n$ & passive & PPO & RMS acc & peak acc & RMS defl & RMS tyre 
 \end{table*}
 
 \section{Results}
-Fig.~\ref{fig:curve}: validation return passes the passive level after $\approx$175k steps and is noisy before. \textbf{Comfort:} PPO lowers RMS and peak body acceleration in every scenario: \NAccRandLo--\NAccRandHi\% on random roads (\NAllPaired\ paired seeds better), \NAccHoLo--\NAccHoHi\% on the three held-out cases, 49\% on the in-distribution bump; the untuned skyhook reference gives about \NSkyAccC\%. \textbf{Trade-offs:} on random roads RMS tyre load is \NDtlRandLo--\NDtlRandHi\% \emph{worse} than passive, deflection is worse in most scenarios, and the contact-loss flag on ISO~D rises from \NClDP\% to \NClDN\% of steps; skyhook leaves tyre load unchanged (\NSkyDtlC\% on ISO~C). On the 10 m/s bump tyre load changes by \NDtlBumpOne\%. \textbf{Effort:} moderate (RMS 52--296 N, peak $\le$\NPeakForceMax\ N, saturation \NSatMax\%).
+Fig.~\ref{fig:curve}: in all three seeds the validation return first falls far below passive (down to \NValDipAll\ at 50--100k steps, while the policy still applies large exploratory forces) and exceeds the passive level by 150--175k steps. \textbf{Comfort:} PPO lowers RMS and peak body acceleration in every scenario: \NAccRandLo--\NAccRandHi\% on random roads (\NAllPaired\ paired seeds better), \NAccHoLo--\NAccHoHi\% on the three held-out cases, 49\% on the in-distribution bump; the untuned skyhook reference gives about \NSkyAccC\%. \textbf{Trade-offs:} on random roads RMS tyre load is \NDtlRandLo--\NDtlRandHi\% \emph{worse} than passive, deflection is worse in most scenarios, and the contact-loss flag on ISO~D rises from \NClDP\% to \NClDN\% of steps; skyhook leaves tyre load unchanged (\NSkyDtlC\% on ISO~C). On the 10 m/s bump tyre load changes by \NDtlBumpOne\%. \textbf{Effort:} moderate (RMS 52--296 N, peak $\le$\NPeakForceMax\ N, saturation \NSatMax\%). \textbf{Seed robustness:} retraining with seeds 1 and 2 gives the same picture (Table~\ref{tab:seed}): on random roads every seed reduces RMS acceleration by \NSeedAccRandLo--\NSeedAccRandHi\% and increases RMS tyre load by \NSeedDtlRandLo--\NSeedDtlRandHi\%.
+
+\begin{table}[t]\centering
+\caption{PPO change vs passive [\%] ($+$ = better), mean$\pm$std over 3 training seeds}\label{tab:seed}
+\scriptsize\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrr@{}}\toprule
+Scenario (set) & RMS acc & RMS defl & RMS tyre load\\\midrule
+\input{seed_table.tex}\\
+\bottomrule\end{tabular}
+\end{table}
 
 \begin{figure}[t]\centering
 \includegraphics[width=\columnwidth]{fig_bars.pdf}
@@ -110,7 +119,7 @@ Fig.~\ref{fig:curve}: validation return passes the passive level after $\approx$
 \end{figure}
 
 \section{Discussion and Conclusion}
-Mean per-step reward terms on ISO~C (passive$\to$PPO) are: acceleration \NTermAccP$\to$\NTermAccN, deflection \NTermDefP$\to$\NTermDefN, tyre force \NTermTyreP$\to$\NTermTyreN, total \NTermTotP$\to$\NTermTotN. PPO thus optimises the stated objective, buying a large comfort gain with higher tyre-force and travel terms (comfort weight 1.0 vs 0.3); a larger $w_t$ should shift this balance (not tested). \emph{Limitations:} one training seed (evaluation spread reflects road variability only); a 1M-step run gave no better validation return; untuned weights; unweighted acceleration; linear tyre; ideal actuator; unvalidated parameters; hidden road velocity. A PPO policy trained on a road mixture thus generalised to unseen and held-out roads for comfort, at a clear road-holding cost; we do not claim superiority over passive suspension. \textbf{Reproducibility:} code, trained model, result CSVs and the commands to regenerate every table and figure of this report are in the repository (\texttt{README.md}); numbers here are generated from the saved CSV files.
+Mean per-step reward terms on ISO~C (passive$\to$PPO) are: acceleration \NTermAccP$\to$\NTermAccN, deflection \NTermDefP$\to$\NTermDefN, tyre force \NTermTyreP$\to$\NTermTyreN, total \NTermTotP$\to$\NTermTotN. PPO thus optimises the stated objective, buying a large comfort gain with higher tyre-force and travel terms (comfort weight 1.0 vs 0.3); a larger $w_t$ should shift this balance (not tested). \emph{Limitations:} only three training seeds (no significance test); a 1M-step run gave no better validation return; untuned weights; unweighted acceleration; linear tyre; ideal actuator; unvalidated parameters; hidden road velocity. A PPO policy trained on a road mixture thus generalised to unseen and held-out roads for comfort, at a clear road-holding cost; we do not claim superiority over passive suspension. \textbf{Reproducibility:} code, trained model, result CSVs and the commands to regenerate every table and figure of this report are in the repository (\texttt{README.md}); numbers here are generated from the saved CSV files.
 
 \begingroup\footnotesize\setlength{\itemsep}{0pt}
 \begin{thebibliography}{9}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}

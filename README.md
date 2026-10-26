@@ -4,7 +4,7 @@ AI Course Mini Project (Assignment 2, IIT Jodhpur). A PPO agent learns to comman
 (2-DOF) active suspension on varying roads, and is compared with the passive suspension (zero actuator force).
 
 * Team: **Darshan Prajapati** (B23CH1032, b23ch1032@iitj.ac.in), **Sunny Kumar** (B23ME1073, b23me1073@iitj.ac.in)
-* GitHub: REPO_URL_PLACEHOLDER
+* GitHub: https://github.com/CrazAzartto/active-suspension-rl
 * Report: `report/main.tex` -> `report/main.pdf` (2 pages, two columns)
 
 ## What is in the repository
@@ -16,6 +16,7 @@ configs/       ppo_default.json (300k-step run), ppo_smoke.json (seconds), eval_
 scripts/       passive run, controller comparison, passive-damping sweep, reward-term breakdown
 tests/         physics + environment tests, training-pipeline tests, report-consistency tests (72 tests)
 models/ppo_default/   trained PPO agent (best_model.zip = best validation checkpoint at 275k steps; final_model.zip; checkpoints/)
+models/ppo_seed1/, models/ppo_seed2/   same config retrained with seeds 1 and 2 (robustness check, report Table II)
 models/ppo_1M/        second run, 1M steps (no better validation return; kept for transparency)
 logs/  results/ppo_default/  figures/ppo_default/  report/    training logs, CSV results, figures, LaTeX report
 INTERFACE_CONTRACT.md   exact environment API (observation/action/reward definitions)
@@ -56,6 +57,12 @@ python train.py --config configs/ppo_default.json                 # seed 0, 300k
 python evaluate.py --model models/ppo_default/best_model.zip --run ppo_default
 python scripts/reward_term_breakdown.py --model models/ppo_default/best_model.zip --run ppo_default
 python plot_results.py --run ppo_default --tmax 6                 # figures/ppo_default/*.png|pdf + captions.md
+# --- seed robustness (each ~1.5 min train + ~1 min eval) ---
+python train.py --config configs/ppo_default.json --seed 1 --run-name ppo_seed1
+python train.py --config configs/ppo_default.json --seed 2 --run-name ppo_seed2
+python evaluate.py --model models/ppo_seed1/best_model.zip --run ppo_seed1 --no-skyhook
+python evaluate.py --model models/ppo_seed2/best_model.zip --run ppo_seed2 --no-skyhook
+python scripts/seed_summary.py --runs ppo_default ppo_seed1 ppo_seed2   # results/seed_summary.csv, report/seed_table.tex
 # --- report ---
 python report/make_report_assets.py --run ppo_default            # numbers.tex, results_table.tex, report figures from CSVs
 cd report && latexmk -pdf main.tex                                # -> report/main.pdf
@@ -77,13 +84,14 @@ Checked on 26 Oct 2026 in a fresh environment (Python 3.13.17, SB3 2.9.2, torch 
 * `pytest -q`: 72 passed.
 * Re-running `evaluate.py` on `models/ppo_default/best_model.zip` reproduced all four result CSVs bit-for-bit.
 * Re-training with `configs/ppo_default.json` (seed 0) reproduced `logs/ppo_default/validation_log.csv` exactly.
-* Two extra training seeds (1, 2; not included in this repository yet) reached best validation returns of −594 and −602
-  (seed 0: −612; passive: −829) with the same comfort-vs-tyre-load trade-off.
+* Two extra training seeds (`models/ppo_seed1`, `models/ppo_seed2`) reached best validation returns of −594 and −602
+  (seed 0: −612; passive: −829) with the same comfort-vs-tyre-load trade-off (`results/seed_summary.csv`).
 
 ## Measured results (run `ppo_default`; details: `results/ppo_default/*.csv`, report Table I)
 PPO lowers RMS/peak body acceleration in every evaluated scenario (22-26 % on random roads, 22-43 % on held-out roads,
 49 % on the in-distribution bump) but **worsens RMS dynamic tyre load by 22-25 % on random roads** and suspension deflection in most
-scenarios; the contact-loss flag rate rises on ISO class D (1.4 % -> 4.3 % of steps). Reported results use one training seed.
+scenarios; the contact-loss flag rate rises on ISO class D (1.4 % -> 4.3 % of steps). Across three training seeds, random-road RMS
+acceleration falls by 22-26 % and RMS tyre load rises by 20-29 % (report Table II).
 This is a comfort/road-holding trade-off, not a uniform improvement.
 
 ## Limitations
