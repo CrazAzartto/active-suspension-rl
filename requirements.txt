@@ -1,0 +1,10 @@
+# Everything needed for the environment, tests, PPO training, evaluation, plots and report assets.
+# Tested with Python 3.12.3, numpy 2.4.4, gymnasium 1.4.0, stable-baselines3 2.9.0, torch 2.14.1, pandas 3.0.2,
+# matplotlib 3.10.8, pytest 9.1.1.  NOTE: torch from PyPI on Linux is a ~4 GB CUDA download; on a CPU-only machine install a
+# CPU wheel first (https://pytorch.org/get-started/locally/), then run this file.
+numpy>=1.26
+gymnasium>=1.0
+pytest>=8.0
+matplotlib>=3.8
+pandas>=2.0
+stable-baselines3>=2.3
