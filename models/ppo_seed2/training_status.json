@@ -1,0 +1,5 @@
+{
+  "training_completed": true,
+  "timesteps": 300000,
+  "wall_time_s": 70.8
+}
